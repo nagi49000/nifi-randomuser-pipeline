@@ -28,6 +28,11 @@ logging.warning(f"Starting NiPyApi demo run, root_pg_id {canvas.get_root_pg_id()
 # https://community.cloudera.com/t5/Community-Articles/Building-Basic-Flows-with-Nipyapi/ta-p/270136
 
 # send in configuration details for customizing the processors
+# processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
+controller_JsonTreeReader_config = {
+    "properties": {
+    }
+}
 processor_InvokeHTTP_config = {
     "properties": {
         "Remote URL": "https://randomuser.me/api/"
@@ -57,11 +62,13 @@ new_processor_group = canvas.create_process_group(
     root_process_group, f"test_process_group_{t}", location, f"this is a test created {t}")
 
 # get the processors
+controller_JsonTreeReader = canvas.get_controller_type("org.apache.nifi.json.JsonTreeReader", identifier_type='name')
 processor_InvokeHTTP = canvas.get_processor_type(
     "org.apache.nifi.processors.standard.InvokeHTTP", identifier_type="name")
 processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standard.PutFile", identifier_type="name")
 
 # put processors on canvas in specificed process group
+jsonTreeReader = canvas.create_controller(new_processor_group, controller_JsonTreeReader, name=None)
 invokeHTTP = canvas.create_processor(new_processor_group, processor_InvokeHTTP,
                                      location=(100, 100), name=None, config=processor_InvokeHTTP_config)
 putFile = canvas.create_processor(new_processor_group, processor_PutFile, location=(100, 700),
