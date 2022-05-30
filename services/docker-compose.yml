@@ -1,0 +1,51 @@
+# docker-compose inspired by
+#   CribberSix https://gist.github.com/CribberSix/260f130f2936e97ed2d0fef0df08874d
+#   https://medium.com/analytics-vidhya/setting-apache-nifi-on-docker-containers-a00e862a8399
+
+version: "2.2"
+services:
+
+  nifi:
+    image: apache/nifi:1.15.0
+    ports:
+      - "8091:8080"
+      - "8443:8443"
+    volumes:
+      - "./nifi-data:/opt/nifi/nifi-current/ls-target"
+    environment:
+      # commenting this line out will convert the nifi web server to serve on https...
+      - NIFI_WEB_HTTP_PORT=8080
+      # ... in which case these creds can be used to access over https
+      # - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      # - SINGLE_USER_CREDENTIALS_PASSWORD=letadminintonifi
+    depends_on:
+      - nifi-registry
+    # uncomment volumes for persistence
+    #volumes:
+      #- ./nifi/database_repository:/opt/nifi/nifi-current/database_repository
+      #- ./nifi/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      #- ./nifi/content_repository:/opt/nifi/nifi-current/content_repository
+      #- ./nifi/provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      #- ./nifi/state:/opt/nifi/nifi-current/state
+      #- ./nifi/logs:/opt/nifi/nifi-current/logs
+      # uncomment the next line after copying the /conf directory from the container to your local directory to persist NiFi flows
+      #- ./nifi/conf:/opt/nifi/nifi-current/conf
+    links:
+      - "nifi-registry:nifi-reg"
+
+  nifi-registry:
+    image: apache/nifi-registry:1.15.0
+    # uncomment volumes for persistentce
+    #volumes:
+      #- ./nifi_registry/database:/opt/nifi-registry/nifi-registry-current/database
+      #- ./nifi_registry/flow_storage:/opt/nifi-registry/nifi-registry-current/flow_storage
+    ports:
+      - "18080:18080"
+
+  nipyapi-demo:
+    build:
+      context: ./python-demo-setup
+      dockerfile: Dockerfile
+    links:
+      - "nifi-registry:registry"
+      - "nifi:nifi"
