@@ -65,12 +65,19 @@ requests.put(json_reader_uri, json=j)
 # get the processors
 processor_FlattenJson = canvas.get_processor_type("org.apache.nifi.processors.standard.FlattenJson")
 processor_ConvertRecord = canvas.get_processor_type("org.apache.nifi.processors.standard.ConvertRecord")
+processor_MergeRecord = canvas.get_processor_type("org.apache.nifi.processors.standard.MergeRecord")
 processor_InvokeHTTP = canvas.get_processor_type("org.apache.nifi.processors.standard.InvokeHTTP")
 processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standard.PutFile")
 
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
 # no config for convertRecord, since nipyapi isn't able to handle non-str values in properties
+config_MergedRecord = {
+    "properties": {
+        'correlation-attribute-name': "gender"
+    },
+    "autoTerminatedRelationships": ["original"]
+}
 config_FlattenJson = {
     "properties": {
         "flatten-json-separator": "_"
@@ -83,7 +90,7 @@ config_InvokeHTTP = {
     "schedulingPeriod": "3 sec",
     "schedulingStrategy": "TIMER_DRIVEN"
 }
-config_success_PutFile = {
+config_merged_PutFile = {
     "properties": {
         "Directory": "${success_put_file_dir}",
         "Conflict Resolution Strategy": "replace",
@@ -107,11 +114,11 @@ invokeHTTP = canvas.create_processor(
 flattenJson = canvas.create_processor(
     proc_group, processor_FlattenJson, location=(100, 400), name="flatten deep json", config=config_FlattenJson
 )
-convertRecord = canvas.create_processor(
-    proc_group, processor_ConvertRecord, location=(100, 700), name="convert json to csv"
+mergeRecord = canvas.create_processor(
+    proc_group, processor_MergeRecord, location=(100, 700), name="convert json to csv", config=config_MergedRecord
 )
 success_putFile = canvas.create_processor(
-    proc_group, processor_PutFile, location=(100, 1000), name="put file to disk", config=config_success_PutFile
+    proc_group, processor_PutFile, location=(100, 1000), name="put file to disk", config=config_merged_PutFile
 )
 failure_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 700), name="failed jsons", config=config_failure_PutFile
@@ -119,23 +126,23 @@ failure_putFile = canvas.create_processor(
 
 # canvas create connection between processors
 canvas.create_connection(invokeHTTP, flattenJson, relationships=None, name="deep randomuser json")
-canvas.create_connection(flattenJson, convertRecord, relationships=None, name="flat randomuser json")
-canvas.create_connection(convertRecord, success_putFile, relationships=["success"], name="randomuser csv")
-canvas.create_connection(convertRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
+canvas.create_connection(flattenJson, mergeRecord, relationships=None, name="flat randomuser json")
+canvas.create_connection(mergeRecord, success_putFile, relationships=["merged"], name="merged randomuser csv")
+canvas.create_connection(mergeRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
 
-# modify the convertRecord processor using the nifi api to use the controllers defined, since nipyapi can't handle it
-convert_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == "convert json to csv"][0]
-j = requests.get(convert_record_uri).json()
+# modify the mergeRecord processor using the nifi api to use the controllers defined, since nipyapi can't handle it
+merge_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == "convert json to csv"][0]
+j = requests.get(merge_record_uri).json()
 j['component']['config']['properties']['record-reader'] = json_reader_id
 j['component']['config']['properties']['record-writer'] = csv_writer_id
-requests.put(convert_record_uri, json=j)
+requests.put(merge_record_uri, json=j)
 # start the controllers and processor - using schedule_controller throws, so using nifi api directly
 for uri in [json_reader_uri, csv_writer_uri]:
     j = requests.get(uri).json()
     j["component"]["state"] = "ENABLED"
     requests.put(uri, json=j)
 time.sleep(5)  # snooze a bit to wait for the controllers to start
-canvas.schedule_processor(convertRecord, True)
+canvas.schedule_processor(mergeRecord, True)
 
 # start process group
 canvas.schedule_process_group(proc_group.id, True)
