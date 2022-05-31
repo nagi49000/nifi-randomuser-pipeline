@@ -161,8 +161,7 @@ randomuser_avro_schema = '''{
                                 "fields": [
                                     {
                                         "name": "date",
-                                        "type": "int",
-                                        "logicalType": "date"
+                                        "type": "string"
                                     },
                                     {
                                         "name": "age",
@@ -179,8 +178,7 @@ randomuser_avro_schema = '''{
                                 "fields": [
                                     {
                                         "name": "date",
-                                        "type": "int",
-                                        "logicalType": "date"
+                                        "type": "string"
                                     },
                                     {
                                         "name": "age",
