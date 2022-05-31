@@ -2,7 +2,6 @@ import time
 import logging
 from datetime import datetime
 from nipyapi import config, canvas
-from avro_schemas import randomuser_avro_schema
 import requests
 
 logging.basicConfig(level=logging.DEBUG)
@@ -43,7 +42,6 @@ proc_group = canvas.create_process_group(
 # set variables in the porcess group that will be used later on
 canvas.update_variable_registry(proc_group, ([("success_put_file_dir", "/tmp/test_dst")]))
 canvas.update_variable_registry(proc_group, ([("failure_put_file_dir", "/tmp/fail_to_parse")]))
-canvas.update_variable_registry(proc_group, ([("avro.schema", randomuser_avro_schema)]))
 
 # create controllers that will be used  for processors within the processing group
 json_reader_name = "parser for randomuser json"
@@ -59,13 +57,10 @@ json_reader_uri = [x.uri for x in controllers_json if x.component.name == json_r
 csv_writer_uri = [x.uri for x in controllers_json if x.component.name == csv_writer_name][0]
 json_reader_id = [x.id for x in controllers_json if x.component.name == json_reader_name][0]
 csv_writer_id = [x.id for x in controllers_json if x.component.name == csv_writer_name][0]
-for uri in [json_reader_uri, csv_writer_uri]:
-    # set the controller to look at the imported avro schema
-    j = requests.get(uri).json()
-    j["component"]["properties"]["schema-access-strategy"] = "schema-text-property"
-    j["component"]["properties"]["schema-text"] = "${avro.schema}"
-    requests.put(uri, json=j)
-
+j = requests.get(json_reader_uri).json()
+j["component"]["properties"]["starting-field-strategy"] = "NESTED_FIELD"
+j["component"]["properties"]["starting-field-name"] = "results"
+requests.put(json_reader_uri, json=j)
 
 # get the processors
 processor_FlattenJson = canvas.get_processor_type("org.apache.nifi.processors.standard.FlattenJson")

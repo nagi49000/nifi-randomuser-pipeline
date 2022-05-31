@@ -6,7 +6,7 @@ version: "2.2"
 services:
 
   nifi:
-    image: apache/nifi:1.15.0
+    image: apache/nifi:1.16.2
     ports:
       - "8091:8080"
       - "8443:8443"
@@ -34,7 +34,7 @@ services:
       - "nifi-registry:nifi-reg"
 
   nifi-registry:
-    image: apache/nifi-registry:1.15.0
+    image: apache/nifi-registry:1.16.2
     # uncomment volumes for persistentce
     #volumes:
       #- ./nifi_registry/database:/opt/nifi-registry/nifi-registry-current/database
