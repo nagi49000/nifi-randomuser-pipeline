@@ -68,6 +68,7 @@ for uri in [json_reader_uri, csv_writer_uri]:
 
 
 # get the processors
+processor_FlattenJson = canvas.get_processor_type("org.apache.nifi.processors.standard.FlattenJson")
 processor_ConvertRecord = canvas.get_processor_type("org.apache.nifi.processors.standard.ConvertRecord")
 processor_InvokeHTTP = canvas.get_processor_type("org.apache.nifi.processors.standard.InvokeHTTP")
 processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standard.PutFile")
@@ -75,6 +76,11 @@ processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standa
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
 # no config for convertRecord, since nipyapi isn't able to handle non-str values in properties
+config_FlattenJson = {
+    "properties": {
+        "flatten-json-separator": "_"
+    }
+}
 config_InvokeHTTP = {
     "properties": {
         "Remote URL": "https://randomuser.me/api/"
@@ -103,23 +109,27 @@ config_failure_PutFile = {
 invokeHTTP = canvas.create_processor(
     proc_group, processor_InvokeHTTP, location=(100, 100), name="get from randomuser api", config=config_InvokeHTTP
 )
+flattenJson = canvas.create_processor(
+    proc_group, processor_FlattenJson, location=(100, 400), name="flatten deep json", config=config_FlattenJson
+)
 convertRecord = canvas.create_processor(
-    proc_group, processor_ConvertRecord, location=(100, 400), name="convert json to csv"
+    proc_group, processor_ConvertRecord, location=(100, 700), name="convert json to csv"
 )
 success_putFile = canvas.create_processor(
-    proc_group, processor_PutFile, location=(100, 700), name="put file to disk", config=config_success_PutFile
+    proc_group, processor_PutFile, location=(100, 1000), name="put file to disk", config=config_success_PutFile
 )
 failure_putFile = canvas.create_processor(
-    proc_group, processor_PutFile, location=(700, 400), name="failed jsons", config=config_failure_PutFile
+    proc_group, processor_PutFile, location=(700, 700), name="failed jsons", config=config_failure_PutFile
 )
 
 # canvas create connection between processors
-canvas.create_connection(invokeHTTP, convertRecord, relationships=None, name="randomuser json")
+canvas.create_connection(invokeHTTP, flattenJson, relationships=None, name="deep randomuser json")
+canvas.create_connection(flattenJson, convertRecord, relationships=None, name="flat randomuser json")
 canvas.create_connection(convertRecord, success_putFile, relationships=["success"], name="randomuser csv")
 canvas.create_connection(convertRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
 
 # modify the convertRecord processor using the nifi api to use the controllers defined, since nipyapi can't handle it
-convert_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == 'convert json to csv'][0]
+convert_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == "convert json to csv"][0]
 j = requests.get(convert_record_uri).json()
 j['component']['config']['properties']['record-reader'] = json_reader_id
 j['component']['config']['properties']['record-writer'] = csv_writer_id
