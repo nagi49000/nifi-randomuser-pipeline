@@ -40,6 +40,11 @@ t = datetime.utcnow().isoformat(timespec="seconds") + "Z"
 proc_group = canvas.create_process_group(
     root_process_group, f"test_process_group_{t}", location, f"this is a test created {t}")
 
+# set variables in the porcess group that will be used later on
+canvas.update_variable_registry(proc_group, ([("success_put_file_dir", "/tmp/test_dst")]))
+canvas.update_variable_registry(proc_group, ([("failure_put_file_dir", "/tmp/fail_to_parse")]))
+canvas.update_variable_registry(proc_group, ([("avro.schema", randomuser_avro_schema)]))
+
 # create controllers that will be used  for processors within the processing group
 json_reader_name = "parser for randomuser json"
 csv_writer_name = "write csv records"
@@ -69,6 +74,7 @@ processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standa
 
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
+# no config for convertRecord, since nipyapi isn't able to handle non-str values in properties
 config_InvokeHTTP = {
     "properties": {
         "Remote URL": "https://randomuser.me/api/"
@@ -107,26 +113,24 @@ failure_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 400), name="failed jsons", config=config_failure_PutFile
 )
 
-# modify the convertRecord processor using the nifi api to use the controllers defined, since nipyapi can't handle it
-uri = [x.uri for x in canvas.list_all_processors() if x.component.name == 'convert json to csv'][0]
-j = requests.get(uri).json()
-j['component']['config']['properties']['record-reader'] = json_reader_id
-j['component']['config']['properties']['record-writer'] = csv_writer_id
-requests.put(uri, json=j)
-
 # canvas create connection between processors
 canvas.create_connection(invokeHTTP, convertRecord, relationships=None, name="randomuser json")
 canvas.create_connection(convertRecord, success_putFile, relationships=["success"], name="randomuser csv")
 canvas.create_connection(convertRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
 
-# get variable registry
-var_reg = canvas.get_variable_registry(proc_group, True)
-
-
-# set new variables from incoming file
-canvas.update_variable_registry(proc_group, ([("success_put_file_dir", "/tmp/test_dst")]))
-canvas.update_variable_registry(proc_group, ([("failure_put_file_dir", "/tmp/fail_to_parse")]))
-canvas.update_variable_registry(proc_group, ([("avro.schema", randomuser_avro_schema)]))
+# modify the convertRecord processor using the nifi api to use the controllers defined, since nipyapi can't handle it
+convert_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == 'convert json to csv'][0]
+j = requests.get(convert_record_uri).json()
+j['component']['config']['properties']['record-reader'] = json_reader_id
+j['component']['config']['properties']['record-writer'] = csv_writer_id
+requests.put(convert_record_uri, json=j)
+# start the controllers and processor - using schedule_controller throws, so using nifi api directly
+for uri in [json_reader_uri, csv_writer_uri]:
+    j = requests.get(uri).json()
+    j["component"]["state"] = "ENABLED"
+    requests.put(uri, json=j)
+time.sleep(5)  # snooze a bit to wait for the controllers to start
+canvas.schedule_processor(convertRecord, True)
 
 # start process group
 canvas.schedule_process_group(proc_group.id, True)
