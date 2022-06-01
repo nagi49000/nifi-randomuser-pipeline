@@ -1,6 +1,6 @@
+import os
 import time
 import logging
-from datetime import datetime
 from nipyapi import config, canvas
 import requests
 
@@ -32,12 +32,21 @@ root_id = canvas.get_root_pg_id()
 
 # get the root process group
 root_process_group = canvas.get_process_group(root_id, "id")
+proc_group_name = "randomuser_to_neo4j"
+
+if proc_group_name in [x.component.name for x in canvas.list_all_process_groups()]:
+    if os.getenv("NIFI_FORCE_PROCESSOR_CLEAN", "FALSE") == "TRUE":
+        logging.warning(f"Processing group {proc_group_name} already exists; nuking it")
+        proc_group = canvas.get_process_group(proc_group_name)
+        canvas.delete_process_group(proc_group, force=True)
+    else:
+        logging.error(f"Processing group {proc_group_name} already exists; skipping deploying Nifi Flow")
+        exit(0)
 
 # create the processor group
 location = (100, 200)  # location to visually place processor on canvas
-t = datetime.utcnow().isoformat(timespec="seconds") + "Z"
 proc_group = canvas.create_process_group(
-    root_process_group, f"test_process_group_{t}", location, f"this is a test created {t}")
+    root_process_group, proc_group_name, location, f"take records from an api and put them in neo4j")
 
 # set variables in the porcess group that will be used later on
 canvas.update_variable_registry(proc_group, ([("success_put_file_dir", "/tmp/test_dst")]))
@@ -71,10 +80,10 @@ processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standa
 
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
-# no config for convertRecord, since nipyapi isn't able to handle non-str values in properties
+merge_record_name = "convert json to merged csv"
 config_MergedRecord = {
     "properties": {
-        'correlation-attribute-name': "gender"
+        "min-records": 300
     },
     "autoTerminatedRelationships": ["original"]
 }
@@ -87,7 +96,7 @@ config_InvokeHTTP = {
     "properties": {
         "Remote URL": "https://randomuser.me/api/"
     },
-    "schedulingPeriod": "3 sec",
+    "schedulingPeriod": "1 sec",
     "schedulingStrategy": "TIMER_DRIVEN"
 }
 config_merged_PutFile = {
@@ -115,7 +124,7 @@ flattenJson = canvas.create_processor(
     proc_group, processor_FlattenJson, location=(100, 400), name="flatten deep json", config=config_FlattenJson
 )
 mergeRecord = canvas.create_processor(
-    proc_group, processor_MergeRecord, location=(100, 700), name="convert json to csv", config=config_MergedRecord
+    proc_group, processor_MergeRecord, location=(100, 700), name=merge_record_name, config=config_MergedRecord
 )
 success_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(100, 1000), name="put file to disk", config=config_merged_PutFile
@@ -131,7 +140,7 @@ canvas.create_connection(mergeRecord, success_putFile, relationships=["merged"],
 canvas.create_connection(mergeRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
 
 # modify the mergeRecord processor using the nifi api to use the controllers defined, since nipyapi can't handle it
-merge_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == "convert json to csv"][0]
+merge_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == merge_record_name][0]
 j = requests.get(merge_record_uri).json()
 j['component']['config']['properties']['record-reader'] = json_reader_id
 j['component']['config']['properties']['record-writer'] = csv_writer_id
@@ -148,6 +157,3 @@ canvas.schedule_processor(mergeRecord, True)
 canvas.schedule_process_group(proc_group.id, True)
 
 logging.warning(f"demo files created: {dir()}")
-
-
-time.sleep(9999)

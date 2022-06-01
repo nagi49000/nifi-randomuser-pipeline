@@ -10,7 +10,7 @@ services:
     ports:
       - "8091:8080"
       - "8443:8443"
-    # volumes:
+    #volumes:
       #- "./nifi-data:/opt/nifi/nifi-current/ls-target"
     environment:
       # commenting this line out will convert the nifi web server to serve on https...
@@ -46,6 +46,8 @@ services:
     build:
       context: ./python-demo-setup
       dockerfile: Dockerfile
+    environment:
+      - NIFI_FORCE_PROCESSOR_CLEAN=TRUE
     links:
       - "nifi-registry:registry"
       - "nifi:nifi"
