@@ -48,11 +48,12 @@ location = (100, 200)  # location to visually place processor on canvas
 proc_group = canvas.create_process_group(
     root_process_group, proc_group_name, location, f"take records from an api and put them in neo4j")
 
-# set variables in the porcess group that will be used later on
+# set variables in the process group that will be used later on
 canvas.update_variable_registry(proc_group, ([("success_put_file_dir", "/tmp/test_dst")]))
 canvas.update_variable_registry(proc_group, ([("failure_put_file_dir", "/tmp/fail_to_parse")]))
 
-# create controllers that will be used  for processors within the processing group
+# create controllers that will be used by processors within the processing group
+# controllers and properties defined on https://nifi.apache.org/docs/nifi-docs/
 json_reader_name = "parser for randomuser json"
 csv_writer_name = "write csv records"
 controller_JsonTreeReader = canvas.get_controller_type("org.apache.nifi.json.JsonTreeReader")
@@ -145,7 +146,7 @@ j = requests.get(merge_record_uri).json()
 j['component']['config']['properties']['record-reader'] = json_reader_id
 j['component']['config']['properties']['record-writer'] = csv_writer_id
 requests.put(merge_record_uri, json=j)
-# start the controllers and processor - using schedule_controller throws, so using nifi api directly
+# start the controllers and processor - using nipyapi's canvas.schedule_controller throws, so using nifi api directly
 for uri in [json_reader_uri, csv_writer_uri]:
     j = requests.get(uri).json()
     j["component"]["state"] = "ENABLED"
