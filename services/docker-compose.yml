@@ -34,6 +34,8 @@ services:
       #- ./nifi/conf:/opt/nifi/nifi-current/conf
     links:
       - "nifi-registry:nifi-reg"
+      # allows making connections via cypher-shell as $ cypher-shell --address neo4j://neo4j:7687
+      - "neo4j:neo4j"
 
   nifi-registry:
     image: apache/nifi-registry:1.16.2
