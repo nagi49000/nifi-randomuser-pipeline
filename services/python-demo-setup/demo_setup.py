@@ -54,6 +54,7 @@ canvas.update_variable_registry(proc_group, ([("failure_put_file_dir", "/tmp/fai
 
 # create controllers that will be used by processors within the processing group
 # controllers and properties defined on https://nifi.apache.org/docs/nifi-docs/
+# nipyapi's handling of controllers is lacking, so controllers configured using nifi's api
 json_reader_name = "parser for randomuser json"
 csv_writer_name = "write csv records"
 controller_JsonTreeReader = canvas.get_controller_type("org.apache.nifi.json.JsonTreeReader")
@@ -84,7 +85,9 @@ processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standa
 merge_record_name = "convert json to merged csv"
 config_MergedRecord = {
     "properties": {
-        "min-records": 300
+        "min-records": 300,
+        "record-reader": json_reader_id,
+        "record-writer": csv_writer_id
     },
     "autoTerminatedRelationships": ["original"]
 }
@@ -140,18 +143,19 @@ canvas.create_connection(flattenJson, mergeRecord, relationships=None, name="fla
 canvas.create_connection(mergeRecord, success_putFile, relationships=["merged"], name="merged randomuser csv")
 canvas.create_connection(mergeRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
 
-# modify the mergeRecord processor using the nifi api to use the controllers defined, since nipyapi can't handle it
-merge_record_uri = [x.uri for x in canvas.list_all_processors() if x.component.name == merge_record_name][0]
-j = requests.get(merge_record_uri).json()
-j['component']['config']['properties']['record-reader'] = json_reader_id
-j['component']['config']['properties']['record-writer'] = csv_writer_id
-requests.put(merge_record_uri, json=j)
 # start the controllers and processor - using nipyapi's canvas.schedule_controller throws, so using nifi api directly
 for uri in [json_reader_uri, csv_writer_uri]:
     j = requests.get(uri).json()
     j["component"]["state"] = "ENABLED"
     requests.put(uri, json=j)
-time.sleep(5)  # snooze a bit to wait for the controllers to start
+# snooze a bit to wait for the controllers to start
+wait_secs = 0
+while (requests.get(json_reader_uri).json()["component"]["state"] != "ENABLED" and
+       requests.get(csv_writer_uri).json()["component"]["state"] != "ENABLED" and
+       wait_secs < 10):
+    time.sleep(1)
+    wait_secs += 1
+# and then start the processor that uses the controllers
 canvas.schedule_processor(mergeRecord, True)
 
 # start process group
