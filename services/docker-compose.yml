@@ -6,7 +6,9 @@ version: "2.2"
 services:
 
   nifi:
-    image: apache/nifi:1.16.2
+    build:
+      context: ./nifi-cypher
+      dockerfile: Dockerfile
     ports:
       - "8091:8080"
       - "8443:8443"
@@ -37,8 +39,8 @@ services:
     image: apache/nifi-registry:1.16.2
     # uncomment volumes for persistentce
     #volumes:
-      #- ./nifi_registry/database:/opt/nifi-registry/nifi-registry-current/database
-      #- ./nifi_registry/flow_storage:/opt/nifi-registry/nifi-registry-current/flow_storage
+      #- ./nifi-registry/database:/opt/nifi-registry/nifi-registry-current/database
+      #- ./nifi-registry/flow_storage:/opt/nifi-registry/nifi-registry-current/flow_storage
     ports:
       - "18080:18080"
 
