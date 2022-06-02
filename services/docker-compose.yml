@@ -46,8 +46,35 @@ services:
     build:
       context: ./python-demo-setup
       dockerfile: Dockerfile
+    depends_on:
+      - nifi-registry
+      - nifi
     environment:
       - NIFI_FORCE_PROCESSOR_CLEAN=TRUE
     links:
       - "nifi-registry:registry"
       - "nifi:nifi"
+
+  neo4j:
+    # tested on neo4j version 4.4.4
+    image: neo4j:4.4.4-community
+    # restart: unless-stopped
+    ports:
+      - 7474:7474
+      - 7687:7687
+    # uncomment volumes for persistence
+    #volumes:
+      #- ./conf:/conf
+      #- ./data:/data
+      #- ./import:/import
+      #- ./logs:/logs
+      #- ./plugins:/plugins
+    environment:
+      # Raise memory limits
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms_memory_heap_initial__size=4G
+      - NEO4J_dbms_memory_heap_max__size=4G
+      # - NEO4J_USERNAME=neo4j
+      # - NEO4J_PASSWORD=neo4j
+      # hack on disabling username/password for demo purposes
+      - NEO4J_dbms_security_auth__enabled=false
