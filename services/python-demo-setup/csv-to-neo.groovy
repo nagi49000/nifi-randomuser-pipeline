@@ -29,7 +29,7 @@ try {
         log.error(IOUtils.toString(cypherProcess.getErr(), StandardCharsets.UTF_8))
         session.transfer(flowFile, REL_FAILURE)
     } else {
-        log.warn(cypherProcess.text)
+        log.info(cypherProcess.text)
         session.transfer(flowFile, REL_SUCCESS)
     }
 } catch (Exception e) {
