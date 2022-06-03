@@ -116,7 +116,7 @@ config_merged_PutFile = {
         "Conflict Resolution Strategy": "replace",
         "Maximum File Count": 100
     },
-    "autoTerminatedRelationships": ["failure", "success"]
+    "autoTerminatedRelationships": ["failure"]
 }
 config_failure_PutFile = {
     "properties": {
@@ -156,13 +156,13 @@ mergeRecord = canvas.create_processor(
     proc_group, processor_MergeRecord, location=(100, 700), name=merge_record_name, config=config_MergedRecord
 )
 success_putFile = canvas.create_processor(
-    proc_group, processor_PutFile, location=(700, 1000), name="put file to disk", config=config_merged_PutFile
+    proc_group, processor_PutFile, location=(100, 1000), name="put file to disk", config=config_merged_PutFile
 )
 failure_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 700), name="failed jsons", config=config_failure_PutFile
 )
 neo4j_executeGroovyScript = canvas.create_processor(
-    proc_group, processor_ExecuteScript, location=(100, 1000), name="send to neo4j", config=config_ExecuteScript
+    proc_group, processor_ExecuteScript, location=(100, 1300), name="send to neo4j", config=config_ExecuteScript
 )
 failure_neo4j_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 1300), name="failed to send to neo4j", config=config_neo4j_failure_PutFile
@@ -173,8 +173,8 @@ canvas.create_connection(invokeHTTP, flattenJson, relationships=None, name="deep
 canvas.create_connection(flattenJson, mergeRecord, relationships=None, name="flat randomuser json")
 canvas.create_connection(mergeRecord, success_putFile, relationships=["merged"], name="merged randomuser csv")
 canvas.create_connection(mergeRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
-canvas.create_connection(mergeRecord, neo4j_executeGroovyScript,
-                         relationships=["merged"], name="merged randomuser csv for neo4j")
+canvas.create_connection(success_putFile, neo4j_executeGroovyScript,
+                         relationships=["success"], name="merged randomuser csv for neo4j")
 canvas.create_connection(neo4j_executeGroovyScript, failure_neo4j_putFile,
                          relationships=["failure"], name="merged randomuser csvs neo4j failed")
 
