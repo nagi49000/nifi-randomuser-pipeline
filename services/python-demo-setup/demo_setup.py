@@ -92,7 +92,7 @@ with open("csv-to-neo.groovy", "rt") as f:
 merge_record_name = "convert json to merged csv"
 config_MergedRecord = {
     "properties": {
-        "min-records": 10,
+        "min-records": 30,
         "record-reader": json_reader_id,
         "record-writer": csv_writer_id
     },
@@ -176,7 +176,7 @@ canvas.create_connection(mergeRecord, failure_putFile, relationships=["failure"]
 canvas.create_connection(mergeRecord, neo4j_executeGroovyScript,
                          relationships=["merged"], name="merged randomuser csv for neo4j")
 canvas.create_connection(neo4j_executeGroovyScript, failure_neo4j_putFile,
-                         relationships=["failure"], name="merged randomuser csvs neo4j failed")
+                         relationships=["failure"], name="failed csvs to neo4j")
 
 
 # start the controllers and processor - using nipyapi's canvas.schedule_controller throws, so using nifi api directly
