@@ -6,6 +6,7 @@ import requests
 
 logging.basicConfig(level=logging.DEBUG)
 
+neo4j_uri = "neo4j://neo4j:7687"
 config.nifi_config.host = "http://nifi:8080/nifi-api"
 config.registry_config.host = "http://registry:18080/nifi-registry-api"
 
@@ -83,10 +84,8 @@ processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standa
 processor_ExecuteScript = canvas.get_processor_type("org.apache.nifi.processors.script.ExecuteScript")
 
 # define a groovy script for an ExecuteScript processor to call
-groovy_script = (
-    'log.warn("Hello from Groovy")\n'
-    'log.warn("Hola from Groovy")'
-)
+with open("csv-to-neo.groovy", "rt") as f:
+    groovy_script = ''.join(f.readlines())
 
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
@@ -132,7 +131,8 @@ config_ExecuteScript = {
         "Script Engine": "Groovy",
         "Script File": None,
         "Script Body": groovy_script,
-        "Module Directory": None
+        "Module Directory": None,
+        "neo4jUri": neo4j_uri
     },
     "autoTerminatedRelationships": ["success"]
 }
