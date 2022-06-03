@@ -8,7 +8,8 @@ if(!flowFile) return  // bail if no flow file supplied
 File csvFile = new File("${neo4jExportFolder.value}/import_me.csv")
 FileUtils.copyInputStreamToFile(session.read(flowFile), csvFile)
 
-// write cypher query to file
+// write cypher query to file. The file location in the LOAD CSV command is
+// a file in the neo4j container, within neo4j's import folder (not the location within the nifi container)
 def cypherFile = new File("import_data.cypher")
 cypherFile.text = """
 CREATE CONSTRAINT user_login_uuid_unique IF NOT EXISTS ON (n:User) ASSERT n.loginUuid IS UNIQUE;

@@ -202,5 +202,3 @@ canvas.schedule_processor(mergeRecord, True)
 canvas.schedule_process_group(proc_group.id, True)
 
 logging.warning(f"demo files created: {dir()}")
-
-time.sleep(9999)
