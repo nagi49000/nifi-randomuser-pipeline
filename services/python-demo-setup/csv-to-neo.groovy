@@ -4,7 +4,8 @@ import java.nio.charset.StandardCharsets
 flowFile = session.get()
 if(!flowFile) return  // bail if no flow file supplied
 
-File csvFile = new File("import_me.csv")
+// write csv to file, in location neo4jExportFolder specified as property in the processor
+File csvFile = new File("${neo4jExportFolder.value}/import_me.csv")
 FileUtils.copyInputStreamToFile(session.read(flowFile), csvFile)
 
 // write cypher query to file
@@ -14,7 +15,7 @@ CREATE CONSTRAINT user_login_uuid_unique IF NOT EXISTS ON (n:User) ASSERT n.logi
 USING PERIODIC COMMIT 1000
 LOAD CSV WITH HEADERS FROM 'file:///import_me.csv' AS line
 MERGE (u:User {loginUuid: line.login_uuid, nameFirst: line.name_first, nameLast: line.name_last})
-RETURN COUNT(u);
+RETURN COUNT(u) as num_records_imported;
 """
 
 // neo4jUri specified as a property in the processor

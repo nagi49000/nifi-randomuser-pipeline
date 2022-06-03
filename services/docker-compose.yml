@@ -12,7 +12,8 @@ services:
     ports:
       - "8091:8080"
       - "8443:8443"
-    #volumes:
+    volumes:
+      - "./neo4j_csv_transit_folder:/neo4j_export"
       #- "./nifi-data:/opt/nifi/nifi-current/ls-target"
     environment:
       # commenting this line out will convert the nifi web server to serve on https...
@@ -67,10 +68,10 @@ services:
       - 7474:7474
       - 7687:7687
     # uncomment volumes for persistence
-    #volumes:
+    volumes:
+      - "./neo4j_csv_transit_folder:/import"
       #- ./conf:/conf
       #- ./data:/data
-      #- ./import:/import
       #- ./logs:/logs
       #- ./plugins:/plugins
     environment:

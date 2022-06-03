@@ -6,6 +6,9 @@ import requests
 
 logging.basicConfig(level=logging.DEBUG)
 
+# mounted volume in nifi for exporting csv files ready for neo4j import
+nifi_neo4j_export_folder = "/neo4j_export"
+# url of neo4j server for making cypher-shell calls
 neo4j_uri = "neo4j://neo4j:7687"
 config.nifi_config.host = "http://nifi:8080/nifi-api"
 config.registry_config.host = "http://registry:18080/nifi-registry-api"
@@ -132,7 +135,8 @@ config_ExecuteScript = {
         "Script File": None,
         "Script Body": groovy_script,
         "Module Directory": None,
-        "neo4jUri": neo4j_uri
+        "neo4jUri": neo4j_uri,
+        "neo4jExportFolder": nifi_neo4j_export_folder
     },
     "autoTerminatedRelationships": ["success"]
 }
