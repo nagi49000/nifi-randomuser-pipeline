@@ -80,14 +80,20 @@ processor_ConvertRecord = canvas.get_processor_type("org.apache.nifi.processors.
 processor_MergeRecord = canvas.get_processor_type("org.apache.nifi.processors.standard.MergeRecord")
 processor_InvokeHTTP = canvas.get_processor_type("org.apache.nifi.processors.standard.InvokeHTTP")
 processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standard.PutFile")
-processor_ExecuteGroovyScript = canvas.get_processor_type("org.apache.nifi.processors.groovyx.ExecuteGroovyScript")
+processor_ExecuteScript = canvas.get_processor_type("org.apache.nifi.processors.script.ExecuteScript")
+
+# define a groovy script for an ExecuteScript processor to call
+groovy_script = (
+    'log.warn("Hello from Groovy")\n'
+    'log.warn("Hola from Groovy")'
+)
 
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
 merge_record_name = "convert json to merged csv"
 config_MergedRecord = {
     "properties": {
-        "min-records": 300,
+        "min-records": 10,
         "record-reader": json_reader_id,
         "record-writer": csv_writer_id
     },
@@ -121,12 +127,12 @@ config_failure_PutFile = {
     },
     "autoTerminatedRelationships": ["failure", "success"]
 }
-config_ExecuteGroovyScript = {
+config_ExecuteScript = {
     "properties": {
-        "groovyx-script-file": None,
-        "groovyx-script-body": None,
-        "groovyx-failure-strategy": "transfer to failure",
-        "groovyx-additional-classpath": None
+        "Script Engine": "Groovy",
+        "Script File": None,
+        "Script Body": groovy_script,
+        "Module Directory": None
     },
     "autoTerminatedRelationships": ["success"]
 }
@@ -156,7 +162,7 @@ failure_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 700), name="failed jsons", config=config_failure_PutFile
 )
 neo4j_executeGroovyScript = canvas.create_processor(
-    proc_group, processor_ExecuteGroovyScript, location=(100, 1000), name="send to neo4j", config=config_ExecuteGroovyScript
+    proc_group, processor_ExecuteScript, location=(100, 1000), name="send to neo4j", config=config_ExecuteScript
 )
 failure_neo4j_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 1300), name="failed to send to neo4j", config=config_neo4j_failure_PutFile
