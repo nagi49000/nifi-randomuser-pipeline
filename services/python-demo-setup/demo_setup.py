@@ -51,6 +51,7 @@ proc_group = canvas.create_process_group(
 # set variables in the process group that will be used later on
 canvas.update_variable_registry(proc_group, ([("success_put_file_dir", "/tmp/test_dst")]))
 canvas.update_variable_registry(proc_group, ([("failure_put_file_dir", "/tmp/fail_to_parse")]))
+canvas.update_variable_registry(proc_group, ([("neo4j_failure_put_file_dir", "/tmp/fail_neo4j_send")]))
 
 # create controllers that will be used by processors within the processing group
 # controllers and properties defined on https://nifi.apache.org/docs/nifi-docs/
@@ -79,6 +80,7 @@ processor_ConvertRecord = canvas.get_processor_type("org.apache.nifi.processors.
 processor_MergeRecord = canvas.get_processor_type("org.apache.nifi.processors.standard.MergeRecord")
 processor_InvokeHTTP = canvas.get_processor_type("org.apache.nifi.processors.standard.InvokeHTTP")
 processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standard.PutFile")
+processor_ExecuteGroovyScript = canvas.get_processor_type("org.apache.nifi.processors.groovyx.ExecuteGroovyScript")
 
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
@@ -119,6 +121,23 @@ config_failure_PutFile = {
     },
     "autoTerminatedRelationships": ["failure", "success"]
 }
+config_ExecuteGroovyScript = {
+    "properties": {
+        "groovyx-script-file": None,
+        "groovyx-script-body": None,
+        "groovyx-failure-strategy": "transfer to failure",
+        "groovyx-additional-classpath": None
+    },
+    "autoTerminatedRelationships": ["success"]
+}
+config_neo4j_failure_PutFile = {
+    "properties": {
+        "Directory": "${neo4j_failure_put_file_dir}",
+        "Conflict Resolution Strategy": "replace",
+        "Maximum File Count": 100
+    },
+    "autoTerminatedRelationships": ["failure", "success"]
+}
 
 # put processors on canvas in specificed process group
 invokeHTTP = canvas.create_processor(
@@ -131,10 +150,16 @@ mergeRecord = canvas.create_processor(
     proc_group, processor_MergeRecord, location=(100, 700), name=merge_record_name, config=config_MergedRecord
 )
 success_putFile = canvas.create_processor(
-    proc_group, processor_PutFile, location=(100, 1000), name="put file to disk", config=config_merged_PutFile
+    proc_group, processor_PutFile, location=(700, 1000), name="put file to disk", config=config_merged_PutFile
 )
 failure_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 700), name="failed jsons", config=config_failure_PutFile
+)
+neo4j_executeGroovyScript = canvas.create_processor(
+    proc_group, processor_ExecuteGroovyScript, location=(100, 1000), name="send to neo4j", config=config_ExecuteGroovyScript
+)
+failure_neo4j_putFile = canvas.create_processor(
+    proc_group, processor_PutFile, location=(700, 1300), name="failed to send to neo4j", config=config_neo4j_failure_PutFile
 )
 
 # canvas create connection between processors
@@ -142,6 +167,11 @@ canvas.create_connection(invokeHTTP, flattenJson, relationships=None, name="deep
 canvas.create_connection(flattenJson, mergeRecord, relationships=None, name="flat randomuser json")
 canvas.create_connection(mergeRecord, success_putFile, relationships=["merged"], name="merged randomuser csv")
 canvas.create_connection(mergeRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
+canvas.create_connection(mergeRecord, neo4j_executeGroovyScript,
+                         relationships=["merged"], name="merged randomuser csv for neo4j")
+canvas.create_connection(neo4j_executeGroovyScript, failure_neo4j_putFile,
+                         relationships=["failure"], name="merged randomuser csvs neo4j failed")
+
 
 # start the controllers and processor - using nipyapi's canvas.schedule_controller throws, so using nifi api directly
 for uri in [json_reader_uri, csv_writer_uri]:
@@ -162,3 +192,5 @@ canvas.schedule_processor(mergeRecord, True)
 canvas.schedule_process_group(proc_group.id, True)
 
 logging.warning(f"demo files created: {dir()}")
+
+time.sleep(9999)
