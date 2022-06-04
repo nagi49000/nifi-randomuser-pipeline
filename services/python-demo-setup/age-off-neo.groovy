@@ -10,7 +10,7 @@ try {
     p.waitForOrKill(10000)
     if(p.exitValue())
         log.error(IOUtils.toString(p.getErr(), StandardCharsets.UTF_8))
-    log.warn(p.text)
+    log.info(p.text)
 } catch (Exception e) {
     log.error("cypher processing threw exeception, probably killed - see logs")
     throw e
