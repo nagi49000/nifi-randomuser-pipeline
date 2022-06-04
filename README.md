@@ -31,7 +31,7 @@ The nifi services do tend to create a lot of volumes, and use up substantial CPU
 
 The raw data comes in from an [api](https://randomuser.me/api/). Each call to the API returns a [json](docs/randomuser-example.json).
 
-Nifi regularly polls the api for 'new' data, processes it and sends the data into neo4j.
+[Nifi](http://localhost:8091/nifi) regularly polls the api for 'new' data, processes it and sends the data into neo4j.
 
 ![image info](docs/nifi.jpg)
 
@@ -42,6 +42,6 @@ Using processors in nifi:
 - the csvs are sent to neo4j via LOAD CSV and cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
 - old records are aged off using cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
 
-The data landing can be seen in the neo4j browser
+The data landing can be seen in the [neo4j browser](http://localhost:7474) (connect using no authentication).
 
 ![image info](docs/neo4j_browser.jpg)

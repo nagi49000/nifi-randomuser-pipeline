@@ -1,7 +1,7 @@
 import org.apache.commons.io.FileUtils
 import java.nio.charset.StandardCharsets
 flowFile = session.get()
-if(!flowFile) return  // bail if no flow file supplied
+if(!flowFile) return  // bail if no flow file supplied - no processing on flow file, but this means the age-off is run at the same cadence as the ingest
 
 def f = new File("ageoff.cypher")
 f.text = "MATCH (n:User) WHERE n.createdAt < TIMESTAMP() - 24*60*60*1000 DETACH DELETE (n) RETURN COUNT(n) as number_of_deletes;"
