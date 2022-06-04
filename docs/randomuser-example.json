@@ -1,0 +1,66 @@
+{
+   "results":[
+      {
+         "gender":"male",
+         "name":{
+            "title":"Mr",
+            "first":"Jeff",
+            "last":"Henderson"
+         },
+         "location":{
+            "street":{
+               "number":9274,
+               "name":"Alexander Road"
+            },
+            "city":"Liverpool",
+            "state":"Tayside",
+            "country":"United Kingdom",
+            "postcode":"BS2K 2TD",
+            "coordinates":{
+               "latitude":"10.7956",
+               "longitude":"-8.2665"
+            },
+            "timezone":{
+               "offset":"-5:00",
+               "description":"Eastern Time (US & Canada), Bogota, Lima"
+            }
+         },
+         "email":"jeff.henderson@example.com",
+         "login":{
+            "uuid":"764e08e4-d1ef-42e1-a452-fd39592a1ee6",
+            "username":"goldencat972",
+            "password":"corwin",
+            "salt":"1f60i5di",
+            "md5":"3575c47dd416ba1c8055bd058ef9d155",
+            "sha1":"7388fb45b7101abd6728292a8fbd70ffdf86b3c5",
+            "sha256":"59cc8e25cf8dd0e221e82954f81199c80308df06e694d23a275bce3138241b78"
+         },
+         "dob":{
+            "date":"1988-09-03T13:35:59.341Z",
+            "age":34
+         },
+         "registered":{
+            "date":"2006-02-16T12:53:53.018Z",
+            "age":16
+         },
+         "phone":"015396 85167",
+         "cell":"0707-187-591",
+         "id":{
+            "name":"NINO",
+            "value":"JC 52 12 52 I"
+         },
+         "picture":{
+            "large":"https://randomuser.me/api/portraits/men/59.jpg",
+            "medium":"https://randomuser.me/api/portraits/med/men/59.jpg",
+            "thumbnail":"https://randomuser.me/api/portraits/thumb/men/59.jpg"
+         },
+         "nat":"GB"
+      }
+   ],
+   "info":{
+      "seed":"2f3d8b84e04a242c",
+      "results":1,
+      "page":1,
+      "version":"1.3"
+   }
+}

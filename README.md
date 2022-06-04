@@ -24,3 +24,11 @@ The services consist of
 - nifi registry
 - neo4j - stock instance used as the destination for ETL pipeline
 - nipyapi-demo - small python container that sets up ETL pipeline. The pipeline is entirely defined by the code in nipyapi-demo, which uses the nifi api to set up the pipeline from scratch (and so represents the pipeline as infrastructure-as-code)
+
+### Pipeline details
+
+The raw data comes in from an [api](https://randomuser.me/api/). Each call to the API returns a [json](docs/randomuser-example.json).
+
+The regularly polls the api for 'new' data, processes it and sends the data into neo4j.
+
+![image info](docs/nifi.jpg)
