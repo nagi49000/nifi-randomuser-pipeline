@@ -1,7 +1,3 @@
-# docker-compose inspired by
-#   CribberSix https://gist.github.com/CribberSix/260f130f2936e97ed2d0fef0df08874d
-#   https://medium.com/analytics-vidhya/setting-apache-nifi-on-docker-containers-a00e862a8399
-
 version: "2.2"
 services:
 
