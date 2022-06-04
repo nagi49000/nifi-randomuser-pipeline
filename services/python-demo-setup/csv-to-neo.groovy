@@ -40,6 +40,7 @@ try {
         session.transfer(flowFile, REL_SUCCESS)
     }
 } catch (Exception e) {
+    log.error("cypher processing threw exeception, probably killed - see logs")
     session.transfer(flowFile, REL_FAILURE)
     throw e
 } finally {

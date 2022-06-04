@@ -1,4 +1,3 @@
-# this image should be available from the pyflink build stage
 FROM python:3.6-slim-buster
 WORKDIR demo
 RUN python --version && \

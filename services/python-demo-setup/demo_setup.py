@@ -86,16 +86,13 @@ processor_InvokeHTTP = canvas.get_processor_type("org.apache.nifi.processors.sta
 processor_PutFile = canvas.get_processor_type("org.apache.nifi.processors.standard.PutFile")
 processor_ExecuteScript = canvas.get_processor_type("org.apache.nifi.processors.script.ExecuteScript")
 
-# define a groovy script for an ExecuteScript processor to call
-with open("csv-to-neo.groovy", "rt") as f:
-    groovy_script = ''.join(f.readlines())
 
 # send in configuration details for customizing the processors
 # processors and properties defined on https://nifi.apache.org/docs/nifi-docs/
 merge_record_name = "convert json to merged csv"
 config_MergedRecord = {
     "properties": {
-        "min-records": 30,
+        "min-records": 50,
         "record-reader": json_reader_id,
         "record-writer": csv_writer_id
     },
@@ -129,16 +126,31 @@ config_failure_PutFile = {
     },
     "autoTerminatedRelationships": ["failure", "success"]
 }
-config_ExecuteScript = {
+# define a groovy script for an ExecuteScript processor to call
+with open("csv-to-neo.groovy", "rt") as f:
+    groovy_load_csv_script = ''.join(f.readlines())
+config_neo4j_import_ExecuteScript = {
     "properties": {
         "Script Engine": "Groovy",
         "Script File": None,
-        "Script Body": groovy_script,
+        "Script Body": groovy_load_csv_script,
         "Module Directory": None,
         "neo4jUri": neo4j_uri,
         "neo4jExportFolder": nifi_neo4j_export_folder
+    }
+}
+# define a groovy script for an ExecuteScript processor to call
+with open("age-off-neo.groovy", "rt") as f:
+    groovy_age_off_script = ''.join(f.readlines())
+config_neo4j_age_off_ExecuteScript = {
+    "properties": {
+        "Script Engine": "Groovy",
+        "Script File": None,
+        "Script Body": groovy_age_off_script,
+        "Module Directory": None,
+        "neo4jUri": neo4j_uri
     },
-    "autoTerminatedRelationships": ["success"]
+    "autoTerminatedRelationships": ["failure", "success"]
 }
 config_neo4j_failure_PutFile = {
     "properties": {
@@ -165,23 +177,38 @@ success_putFile = canvas.create_processor(
 failure_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 700), name="failed jsons", config=config_failure_PutFile
 )
-neo4j_executeGroovyScript = canvas.create_processor(
-    proc_group, processor_ExecuteScript, location=(100, 1000), name="send to neo4j", config=config_ExecuteScript
+neo4j_import_executeScript = canvas.create_processor(
+    proc_group, processor_ExecuteScript, location=(100, 1000), name="send to neo4j", config=config_neo4j_import_ExecuteScript
 )
 failure_neo4j_putFile = canvas.create_processor(
     proc_group, processor_PutFile, location=(700, 1300), name="failed to send to neo4j", config=config_neo4j_failure_PutFile
 )
+neo4j_age_off_executeScript = canvas.create_processor(
+    proc_group, processor_ExecuteScript, location=(100, 1300), name="age off neo4j records", config=config_neo4j_age_off_ExecuteScript
+)
 
 # canvas create connection between processors
-canvas.create_connection(invokeHTTP, flattenJson, relationships=None, name="deep randomuser json")
-canvas.create_connection(flattenJson, mergeRecord, relationships=None, name="flat randomuser json")
-canvas.create_connection(mergeRecord, success_putFile, relationships=["merged"], name="merged randomuser csv")
-canvas.create_connection(mergeRecord, failure_putFile, relationships=["failure"], name="failed randomuser json")
-canvas.create_connection(mergeRecord, neo4j_executeGroovyScript,
-                         relationships=["merged"], name="merged randomuser csv for neo4j")
-canvas.create_connection(neo4j_executeGroovyScript, failure_neo4j_putFile,
-                         relationships=["failure"], name="failed csvs to neo4j")
-
+canvas.create_connection(
+    invokeHTTP, flattenJson, relationships=None, name="deep randomuser json"
+)
+canvas.create_connection(
+    flattenJson, mergeRecord, relationships=None, name="flat randomuser json"
+)
+canvas.create_connection(
+    mergeRecord, success_putFile, relationships=["merged"], name="merged randomuser csv"
+)
+canvas.create_connection(
+    mergeRecord, failure_putFile, relationships=["failure"], name="failed randomuser json"
+)
+canvas.create_connection(
+    mergeRecord, neo4j_import_executeScript, relationships=["merged"], name="merged randomuser csv for neo4j"
+)
+canvas.create_connection(
+    neo4j_import_executeScript, failure_neo4j_putFile, relationships=["failure"], name="failed csvs to neo4j"
+)
+canvas.create_connection(
+    neo4j_import_executeScript, neo4j_age_off_executeScript, relationships=None, name="age off neo4j data"
+)
 
 # start the controllers and processor - using nipyapi's canvas.schedule_controller throws, so using nifi api directly
 for uri in [json_reader_uri, csv_writer_uri]:
