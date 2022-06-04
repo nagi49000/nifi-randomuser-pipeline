@@ -32,3 +32,14 @@ The raw data comes in from an [api](https://randomuser.me/api/). Each call to th
 The regularly polls the api for 'new' data, processes it and sends the data into neo4j.
 
 ![image info](docs/nifi.jpg)
+
+Using processors in nifi
+- the jsons are pulled from the api (processor GetFile)
+- the jsons are flattened (processor FlattenJson)
+- records merged into single csvs (processor MergeRecord)
+- the csvs sent to neo4j via LOAD CSV and cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
+- old records aged off using cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
+
+The data landing can be seen in the neo4j browser
+
+![image info](docs/neo4j_browser.jpg)
