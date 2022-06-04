@@ -13,9 +13,15 @@ FileUtils.copyInputStreamToFile(session.read(flowFile), csvFile)
 def cypherFile = new File("import_data.cypher")
 cypherFile.text = """
 CREATE CONSTRAINT user_login_uuid_unique IF NOT EXISTS ON (n:User) ASSERT n.loginUuid IS UNIQUE;
+CREATE CONSTRAINT city_location_city_unique IF NOT EXISTS ON (n:City) ASSERT n.locationCity IS UNIQUE;
+CREATE CONSTRAINT country_location_country_unique IF NOT EXISTS ON (n:Country) ASSERT n.locationCountry IS UNIQUE;
 USING PERIODIC COMMIT 1000
 LOAD CSV WITH HEADERS FROM 'file:///import_me.csv' AS line
 MERGE (u:User {loginUuid: line.login_uuid, nameFirst: line.name_first, nameLast: line.name_last})
+MERGE (v:City {locationCity: line.location_city})
+MERGE (w:Country {locationCountry: line.location_country})
+MERGE (u)-[:IS_IN_CITY]->(v)
+MERGE (v)-[:IS_IN_COUNTRY]->(w)
 RETURN COUNT(u) as num_records_imported;
 """
 
