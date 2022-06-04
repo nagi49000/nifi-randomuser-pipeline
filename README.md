@@ -17,7 +17,7 @@ There may be some permissions issues on the mount folders created by "docker-com
 docker container prune; docker-compose build; docker-compose up
 ```
 
-The pipeline is visible on the [nifi page](http://localhost:8091/nifi) and the data warehouse on the [neo4j browser page](http://localhost:7474).
+Once everything has started and settled down, the pipeline is visible on the [nifi page](http://localhost:8091/nifi) and the data warehouse on the [neo4j browser page](http://localhost:7474).
 
 The services consist of
 - nifi - docker image modified to use Java 11 and cypher-shell. Used for ETL orchestration.
@@ -31,16 +31,16 @@ The nifi services do tend to create a lot of volumes, and use up substantial CPU
 
 The raw data comes in from an [api](https://randomuser.me/api/). Each call to the API returns a [json](docs/randomuser-example.json).
 
-The regularly polls the api for 'new' data, processes it and sends the data into neo4j.
+Nifi regularly polls the api for 'new' data, processes it and sends the data into neo4j.
 
 ![image info](docs/nifi.jpg)
 
-Using processors in nifi
-- the jsons are pulled from the api (processor GetFile)
-- the jsons are flattened (processor FlattenJson)
-- records merged into single csvs (processor MergeRecord)
-- the csvs sent to neo4j via LOAD CSV and cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
-- old records aged off using cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
+Using processors in nifi:
+- jsons are pulled from the api (processor GetFile)
+- each jsons is flattened (processor FlattenJson)
+- records are merged into single csvs (processor MergeRecord)
+- the csvs are sent to neo4j via LOAD CSV and cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
+- old records are aged off using cypher-shell (uses a groovy script in a neo4j ExecuteScript processor)
 
 The data landing can be seen in the neo4j browser
 
