@@ -17,7 +17,7 @@ CREATE CONSTRAINT city_location_city_unique IF NOT EXISTS ON (n:City) ASSERT n.l
 CREATE CONSTRAINT country_location_country_unique IF NOT EXISTS ON (n:Country) ASSERT n.locationCountry IS UNIQUE;
 USING PERIODIC COMMIT 1000
 LOAD CSV WITH HEADERS FROM 'file:///import_me.csv' AS line
-MERGE (u:User {loginUuid: line.login_uuid, nameFirst: line.name_first, nameLast: line.name_last})
+MERGE (u:User {loginUuid: line.login_uuid, nameFirst: line.name_first, nameLast: line.name_last, createdAt: TIMESTAMP()})
 MERGE (v:City {locationCity: line.location_city})
 MERGE (w:Country {locationCountry: line.location_country})
 MERGE (u)-[:IS_IN_CITY]->(v)
